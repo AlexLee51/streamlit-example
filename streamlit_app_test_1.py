@@ -18,7 +18,7 @@ kmb_route_label = []
 for i in range(kmb_route_total_number):
     kmb_route_label.append(str(kmb_route[i]['route'] + " (往: " +kmb_route[i]['dest_tc'] + ")"))
 
-kmb_icon = Image.open('kmb_logo.png')
+kmb_icon = Image.open('KMB_logo.png')
 st.image(kmb_icon, caption='KMB')
 
 st.title('香港九龍巴士預計到站時間')
