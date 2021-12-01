@@ -123,4 +123,4 @@ if st.button('提交'):
 
 
 
-   st.write(f"現在時間是 {now}")
+   st.write("現在時間是" + str(hh_1)+ ":" +str(mm_1))
