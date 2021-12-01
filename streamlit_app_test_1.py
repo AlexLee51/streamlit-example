@@ -94,6 +94,7 @@ if st.button('提交'):
        hh_1 = int(now[11:13])
        mm_1 = int(now[14:16])
        ss_1 = int(now[17:19])
+       hh_1 = hh_1+8
        #st.write(str(hh)+str(mm)+str(ss))
 
        eta_remain_time_in_minutes = math.floor(((hh*3600 + mm * 60 + ss) - (hh_1*3600 + mm_1 * 60 + ss_1))/60)
