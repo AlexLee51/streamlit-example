@@ -1,91 +1,135 @@
-import streamlit as st
 import datetime as dt
-import pandas as pd
-import numpy as np
-from PIL import Image
-
-smart_living_icon = Image.open('2.1 Smart Living logo.png')
-st.image(smart_living_icon, caption='HKT Smart Living')
-st.image('https://aws1.discourse-cdn.com/business7/uploads/streamlit/original/2X/f/f0d0d26db1f2d99da8472951c60e5a1b782eb6fe.png')
-
-
-st.title('My Trial Website by Alex Lee')
-st.header('Welcome to HKT Smart Living Engineering')
-
-now = dt.datetime.now()
-your_name = "Your whatever name"
-
-st.write(f"It is now {now}")
-
-st.write(f"My name is {your_name}.")
-
-input_text = st.text_input('Enter whatever:')
-st.caption('This is a string that explains something above.')
-
-st.markdown("**mark**down")
-
-code = '''def hello():
-          print("Hello, Streamlit!")'''
-
-st.code(code, language='python')
-st.text("This is some text.This is some text.This is some text.This is some text.This is some text.This is some text.\nThis is some text.This is some text.This is some text.This is some text.This is some text.This is some text.This is some text.This is some text.")
-
-chart_data = pd.DataFrame(
-     np.random.randn(20, 3),
-     columns=['a', 'b', 'c'])
-
-st.line_chart(chart_data)
-
-
-image = Image.open('sunshine.jpg')
-st.image(image, caption='Sunrise by the mountains')
-
-video_file = open('HKT_SL x MtAnderson_Video_Output_20210521.mp4', 'rb')
-video_bytes = video_file.read()
-st.video(video_bytes)
-st.caption('This video is from local network.')
-
-
-st.video('https://www.youtube.com/watch?v=Klqn--Mu2pE')
-st.caption('This video is from Youtube.')
-
-add_selectbox = st.sidebar.selectbox(
-    "How would you like to be contacted?",
-    ("Email", "Home phone", "Mobile phone")
-)
+import streamlit as st
+import requests
+import json
+import math
 
 
 
+kmb_route_json = requests.get('https://data.etabus.gov.hk/v1/transport/kmb/route/')
 
-# Insert containers
-col1, col2, col3 = st.columns(3)
+kmb_route_raw = json.loads(kmb_route_json.content)
+kmb_route = kmb_route_raw['data']
 
-with col1:
-    st.header("A cat")
-    st.image("https://static.streamlit.io/examples/cat.jpg")
+kmb_route_total_number = len(kmb_route)
 
-with col2:
-    st.header("A dog")
-    st.image("https://static.streamlit.io/examples/dog.jpg")
-
-with col3:
-    st.header("An owl")
-    st.image("https://static.streamlit.io/examples/owl.jpg")
-
-# Insert containers
+kmb_route_label = []
+for i in range(kmb_route_total_number):
+    kmb_route_label.append(str(kmb_route[i]['route'] + " (往: " +kmb_route[i]['dest_tc'] + ")"))
 
 
+st.title('香港九龍巴士預計到站時間')
 
-# Insert form
-with st.form("my_form"):
-    st.write("Inside the form")
-    slider_val = st.slider("Form slider")
-    checkbox_val = st.checkbox("Form checkbox")
+option_route = st.selectbox( '巴士路線:', kmb_route_label )
+st.write('已選路線:  ', option_route)
 
-    # Every form must have a submit button.
-    submitted = st.form_submit_button("Submit")
-    if submitted:
-        st.write("slider", slider_val, "checkbox", checkbox_val)
+selected_route_index_no = kmb_route_label.index(option_route)
 
-st.write("Outside the form")
-# Insert form
+#st.write(kmb_route[selected_route_index_no])
+
+
+selected_route_no = kmb_route[selected_route_index_no]["route"]
+if  kmb_route[selected_route_index_no]["bound"] == "I":
+    selected_route_direction = "inbound"
+elif kmb_route[selected_route_index_no]["bound"] == "O":
+    selected_route_direction = "outbound"
+
+selected_route_service_type = kmb_route[selected_route_index_no]["service_type"]
+
+
+
+#Bus route stop list
+kmb_route_stop_json = requests.get('https://data.etabus.gov.hk/v1/transport/kmb/route-stop/'+selected_route_no+'/'+selected_route_direction+'/'+selected_route_service_type)
+kmb_route_stop_raw = json.loads(kmb_route_stop_json.content)
+kmb_route_stop = kmb_route_stop_raw['data']
+
+
+kmb_route_stop_total_number = len(kmb_route_stop)
+
+kmb_route_stop_id = []
+for i in range(kmb_route_stop_total_number):
+    kmb_route_stop_id.append(str(kmb_route_stop[i]['stop'] ))
+
+
+kmb_route_stop_label = []
+for i in range(kmb_route_stop_total_number):
+    kmb_route_stop_name_json = requests.get('https://data.etabus.gov.hk/v1/transport/kmb/stop/'+kmb_route_stop_id[i])
+    kmb_route_stop_name_raw = json.loads(kmb_route_stop_name_json.content)
+    kmb_route_stop_name = kmb_route_stop_name_raw['data']
+    kmb_route_stop_label.append(str(kmb_route_stop_name["name_tc"]))
+
+
+option_stop = st.selectbox( '巴士站:', kmb_route_stop_label )
+st.write('已選巴士站:  ', option_stop)
+
+selected_stop_index_no = kmb_route_stop_label.index(option_stop)
+
+
+
+#Bus route stop eta
+if st.button('提交'):
+   now = dt.datetime.now()
+   kmb_route_stop_eta_json = requests.get('https://data.etabus.gov.hk/v1/transport/kmb/eta/'+ kmb_route_stop_id[selected_stop_index_no] +'/'+ selected_route_no + '/'+ selected_route_service_type )
+   kmb_route_stop_eta_raw = json.loads(kmb_route_stop_eta_json.content)
+   kmb_route_stop_eta = kmb_route_stop_eta_raw['data']
+   kmb_route_stop_eta_total_number = len(kmb_route_stop_eta)
+   kmb_route_stop_eta_list = []
+
+
+   for i in range(kmb_route_stop_eta_total_number):
+        kmb_route_stop_eta_list.append(str(kmb_route_stop_eta[i]['eta'] ))
+
+   for i in range(kmb_route_stop_eta_total_number):
+       result_index = kmb_route_stop_eta_list[i].find('T')
+       temp = kmb_route_stop_eta_list[i]
+
+       hh = int(temp[(result_index + 1):(result_index + 3) ])
+       mm = int(temp[(result_index + 4):(result_index + 6) ])
+       ss = int(temp[(result_index + 7):(result_index + 9) ])
+
+       now = str(now)
+       hh_1 = int(now[11:13])
+       mm_1 = int(now[14:16])
+       ss_1 = int(now[17:19])
+       #st.write(str(hh)+str(mm)+str(ss))
+
+       eta_remain_time_in_minutes = math.floor(((hh*3600 + mm * 60 + ss) - (hh_1*3600 + mm_1 * 60 + ss_1))/60)
+       #st.write(hh)
+       #st.write(mm)
+       #st.write(ss)
+       #st.write((hh*3600 + mm * 60 + ss))
+       #st.write((hh_1*3600 + mm_1 * 60 + ss_1))
+
+       if eta_remain_time_in_minutes <= 0:
+           st.write(eta_remain_time_in_minutes)
+           eta_remain_time_in_minutes = "--"
+       st.subheader("第"+ str(i+1) +"班車")
+       st.write("預計"+ str(eta_remain_time_in_minutes)+ "分鐘後到站")
+       st.write( " 預計到站時間:" + temp[(result_index + 1):(result_index + 9)])
+       st.write(" " )
+       st.write(" ")
+
+
+
+
+
+   #st.write(kmb_route_stop_eta_list)
+
+
+
+
+
+   st.write(f"現在時間是 {now}")
+
+© 2021 GitHub, Inc.
+Terms
+Privacy
+Security
+Status
+Docs
+Contact GitHub
+Pricing
+API
+Training
+Blog
+About
