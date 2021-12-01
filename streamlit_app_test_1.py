@@ -120,16 +120,3 @@ if st.button('提交'):
 
 
    st.write(f"現在時間是 {now}")
-
-© 2021 GitHub, Inc.
-Terms
-Privacy
-Security
-Status
-Docs
-Contact GitHub
-Pricing
-API
-Training
-Blog
-About
